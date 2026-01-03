@@ -26,6 +26,7 @@ export interface FlowerProduct {
 export type PaginationType = 'none' | 'loadmore' | 'infinite' | 'pagination';
 
 export type ImageTransitionEffect =
+  | 'none'
   | 'fade'
   | 'slide-left'
   | 'slide-right'

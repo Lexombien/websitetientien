@@ -11,6 +11,7 @@ interface CategorySettingsManagerProps {
 }
 
 const IMAGE_TRANSITION_OPTIONS: { value: ImageTransitionEffect; label: string; group: string }[] = [
+    { value: 'none', label: '❌ Không hiệu ứng', group: '⚡ Cơ bản' },
     { value: 'fade', label: 'Fade - Mờ dần', group: '🌊 Hiệu ứng cơ bản' },
     { value: 'slide-left', label: 'Slide Left - Trượt trái', group: '🌊 Hiệu ứng cơ bản' },
     { value: 'slide-right', label: 'Slide Right - Trượt phải', group: '🌊 Hiệu ứng cơ bản' },

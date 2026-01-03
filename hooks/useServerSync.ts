@@ -1,8 +1,13 @@
 // Hook để sync data với server backend
 // Auto-detect backend URL based on environment
-const BACKEND_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3001'  // Local development
-    : '';  // Production: use same origin (Nginx proxy)
+const isDevelopment = window.location.hostname === 'localhost' ||
+    window.location.hostname.match(/^192\.168\./) ||
+    window.location.hostname.match(/^10\./) ||
+    window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+
+const BACKEND_URL = isDevelopment
+    ? `http://${window.location.hostname}:3001`
+    : '';
 
 export const useServerSync = () => {
     // Load data từ server

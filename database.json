@@ -1,59 +1,12 @@
 {
   "products": [
     {
-      "title": "ấdsadsadsa",
-      "category": "MỤC 1",
+      "title": "BÓ Tai Thỏ",
+      "category": "Mẫu Hoa ~ 300K",
       "images": [
-        "http://192.168.1.10:3001/uploads/lmw-3-1767404544549-416600306.webp",
-        "http://192.168.1.10:3001/uploads/pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
-        "http://192.168.1.10:3001/uploads/---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
-        "http://192.168.1.10:3001/uploads/---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png"
-      ],
-      "switchInterval": 3000,
-      "aspectRatio": "3/4",
-      "originalPrice": 500000,
-      "salePrice": 300000,
-      "imagesWithMetadata": [
-        {
-          "url": "http://192.168.1.10:3001/uploads/lmw-3-1767404544549-416600306.webp",
-          "filename": "lmw-3-1767404544549-416600306.webp",
-          "alt": "lmw_3",
-          "title": "lmw_3",
-          "description": ""
-        },
-        {
-          "url": "http://192.168.1.10:3001/uploads/pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
-          "filename": "pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
-          "alt": "Pink Beauty Floral Elegant Nail Art Logo",
-          "title": "Pink Beauty Floral Elegant Nail Art Logo",
-          "description": ""
-        },
-        {
-          "url": "http://192.168.1.10:3001/uploads/---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
-          "filename": "---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
-          "alt": "—Pngtree—crown logo vip member medal_8923135",
-          "title": "—Pngtree—crown logo vip member medal_8923135",
-          "description": ""
-        },
-        {
-          "url": "http://192.168.1.10:3001/uploads/---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png",
-          "filename": "---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png",
-          "alt": "—Pngtree—gold flower with leaves_7674003",
-          "title": "—Pngtree—gold flower with leaves_7674003",
-          "description": ""
-        }
-      ],
-      "id": "1767356658073",
-      "categories": [
-        "MỤC 1"
-      ],
-      "sku": "HOA-001"
-    },
-    {
-      "title": "ABC",
-      "category": "",
-      "images": [
-        "http://192.168.1.10:3001/uploads/lmw-3-1767351162832-845368624.webp"
+        "http://192.168.1.10:3001/uploads/1-300k--24--1767431876054-139996619.jpg",
+        "http://192.168.1.10:3001/uploads/1-300k--23--1767433652640-735435334.jpg",
+        "http://192.168.1.10:3001/uploads/1-300k--22--412788.jpg"
       ],
       "switchInterval": 3000,
       "aspectRatio": "3/4",
@@ -61,18 +14,135 @@
       "salePrice": 0,
       "imagesWithMetadata": [
         {
-          "url": "http://192.168.1.10:3001/uploads/lmw-3-1767351162832-845368624.webp",
-          "filename": "lmw-3-1767351162832-845368624.webp",
-          "alt": "lmw_3",
-          "title": "lmw_3",
+          "url": "http://192.168.1.10:3001/uploads/1-300k--24--1767431876054-139996619.jpg",
+          "filename": "1-300k--24--1767431876054-139996619.jpg",
+          "alt": "1 300k (24)",
+          "title": "1 300k (24)",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--23--1767433652640-735435334.jpg",
+          "filename": "1-300k--23--1767433652640-735435334.jpg",
+          "alt": "1 300k (23)",
+          "title": "1 300k (23)",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--22--412788.jpg",
+          "filename": "1-300k--22--412788.jpg",
+          "alt": "1 300k (22)",
+          "title": "1 300k (22)",
           "description": ""
         }
       ],
-      "id": "1767351164034"
+      "sku": "TT",
+      "id": "1767431883467"
+    },
+    {
+      "title": "Bó DE 10",
+      "category": "Mẫu Hoa ~ 300K",
+      "images": [
+        "http://192.168.1.10:3001/uploads/1-300k--19--1767431778802-621814026.jpg",
+        "http://192.168.1.10:3001/uploads/1-300k--20--1767431780698-834927944.jpg"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 500000,
+      "salePrice": 250000,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--19--1767431778802-621814026.jpg",
+          "filename": "1-300k--19--1767431778802-621814026.jpg",
+          "alt": "1 300k (19)",
+          "title": "1 300k (19)",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--20--1767431780698-834927944.jpg",
+          "filename": "1-300k--20--1767431780698-834927944.jpg",
+          "alt": "1 300k (20)",
+          "title": "1 300k (20)",
+          "description": ""
+        }
+      ],
+      "sku": "DE-10",
+      "id": "1767431796009"
+    },
+    {
+      "title": "Bó DM19",
+      "category": "Mẫu Hoa ~ 300K",
+      "images": [
+        "http://192.168.1.10:3001/uploads/1-300k--17--1767431737130-442106918.jpg"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 500000,
+      "salePrice": 299000,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--17--1767431737130-442106918.jpg",
+          "filename": "1-300k--17--1767431737130-442106918.jpg",
+          "alt": "1 300k (17)",
+          "title": "1 300k (17)",
+          "description": ""
+        }
+      ],
+      "sku": "DM-19",
+      "id": "1767431741325"
+    },
+    {
+      "title": "Bó  Hoa Paper",
+      "category": "Mẫu Hoa ~ 300K",
+      "images": [
+        "http://192.168.1.10:3001/uploads/1-300k--5--1767431639993-948785308.jpg"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 500000,
+      "salePrice": 299000,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--5--1767431639993-948785308.jpg",
+          "filename": "1-300k--5--1767431639993-948785308.jpg",
+          "alt": "1 300k (5)",
+          "title": "1 300k (5)",
+          "description": ""
+        }
+      ],
+      "sku": "DL-19",
+      "id": "1767431646017"
+    },
+    {
+      "title": "Bó Hoa Sáp 30 Bông",
+      "category": "Mẫu Hoa ~ 300K",
+      "images": [
+        "http://192.168.1.10:3001/uploads/1-300k--1--1767431522819-133496408.jpg"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 500000,
+      "salePrice": 349000,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/1-300k--1--1767431522819-133496408.jpg",
+          "filename": "1-300k--1--1767431522819-133496408.jpg",
+          "alt": "1 300k (1)",
+          "title": "1 300k (1)",
+          "description": ""
+        }
+      ],
+      "sku": "OL30-Đỏ",
+      "id": "1767431576942"
     }
   ],
   "categories": [
-    "MỤC 1"
+    "Mẫu Hoa ~ 300K",
+    "Mẫu Hoa ~ 500K",
+    "Mẫu Hoa ~ 1000K",
+    "Mẫu Hoa To Đẹp Vip",
+    "Mẫu Gấu Hoa",
+    "Mẫu Giỏ Chậu Hoa",
+    "Mẫu Hộp Hoa"
   ],
   "settings": {
     "aspectRatio": "3/4",
@@ -81,7 +151,7 @@
     "zaloLink": "https://zalo.me/0567899996",
     "themeColor": "pink",
     "websiteName": "Tiên Tiên Florits",
-    "logoUrl": "http://192.168.1.10:3001/uploads/tamidu-1767409721921-897795594.png",
+    "logoUrl": "http://192.168.1.10:3001/uploads/logo-vip-nag-cap-1767427255242-979558367.png",
     "enablePriceDisplay": true,
     "enableLightbox": true,
     "phoneNumber": "0335127075",
@@ -92,6 +162,11 @@
     "logoSizeMobile": "h-8",
     "customCSS": ""
   },
-  "categorySettings": {},
+  "categorySettings": {
+    "MUC 2": {
+      "imageTransition": "none"
+    }
+  },
+  "media": {},
   "zaloNumber": "0900000000"
 }

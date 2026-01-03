@@ -15,9 +15,14 @@ interface ImageMetadata {
 }
 
 // Auto-detect backend URL based on environment
-const BACKEND_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3001'  // Local development
-    : '';  // Production: use same origin (Nginx proxy)
+const isDevelopment = window.location.hostname === 'localhost' ||
+    window.location.hostname.match(/^192\.168\./) ||
+    window.location.hostname.match(/^10\./) ||
+    window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+
+const BACKEND_URL = isDevelopment
+    ? `http://${window.location.hostname}:3001`
+    : '';
 
 interface MediaLibraryProps {
     onMetadataChange?: (data: Record<string, ImageMetadata>) => void;
@@ -36,6 +41,10 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ onMetadataChange, onImageDe
     // Lightbox for Media Library
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+
+    // Rename functionality
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [newFilenameInput, setNewFilenameInput] = useState('');
 
     // Load data from server
     const loadData = async () => {
@@ -70,6 +79,7 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ onMetadataChange, onImageDe
     useEffect(() => {
         if (selectedImage) {
             setEditingMetadata(mediaMetadata[selectedImage.filename] || {});
+            setNewFilenameInput(''); // Reset rename input
         }
     }, [selectedImage, mediaMetadata]);
 
@@ -153,6 +163,147 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ onMetadataChange, onImageDe
         } catch (error: any) {
             console.error('🔥 Lỗi khi gọi API xóa ảnh:', error);
             alert(`❌ Lỗi xóa ảnh: ${error.message}`);
+        }
+    };
+
+    // Rename image
+    const handleRename = async () => {
+        if (!selectedImage || !newFilenameInput.trim()) {
+            alert('⚠️ Vui lòng nhập tên file mới!');
+            return;
+        }
+
+        console.log(`📝 Bắt đầu đổi tên file: ${selectedImage.filename} → ${newFilenameInput}`);
+        console.log(`🔗 BACKEND_URL: ${BACKEND_URL}`);
+        setIsRenaming(true);
+
+        try {
+            const encodedFilename = encodeURIComponent(selectedImage.filename);
+            const renameUrl = `${BACKEND_URL}/api/rename-upload/${encodedFilename}`;
+            console.log(`🌐 Đang gọi API: ${renameUrl}`);
+
+            const response = await fetch(renameUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newFilename: newFilenameInput }),
+                mode: 'cors'
+            });
+
+            console.log(`📡 Response status: ${response.status}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Response error:', errorText);
+                throw new Error(`Server trả về lỗi ${response.status}: ${errorText}`);
+            }
+
+            const result = await response.json();
+            console.log('📦 Kết quả từ server:', result);
+
+            if (result.success) {
+                // Update database with new filename
+                await updateDatabaseReferences(selectedImage.filename, result.newFilename, result.newUrl);
+
+                alert(`✅ Đã đổi tên thành công!\n\nTên mới: ${result.newFilename}`);
+                setNewFilenameInput('');
+                setSelectedImage(null);
+                loadData(); // Reload list
+            } else {
+                throw new Error(result.error || 'Lỗi không xác định từ server');
+            }
+        } catch (error: any) {
+            console.error('🔥 Lỗi khi đổi tên file:', error);
+            alert(`❌ Lỗi đổi tên: ${error.message}`);
+        } finally {
+            setIsRenaming(false);
+        }
+    };
+
+    // Update all database references when filename changes
+    const updateDatabaseReferences = async (oldFilename: string, newFilename: string, newUrl: string) => {
+        try {
+            console.log('🔄 Đang cập nhật database references...');
+
+            // Get current database
+            const dbResponse = await fetch(`${BACKEND_URL}/api/database`);
+            const dbResult = await dbResponse.json();
+
+            if (!dbResult.success) {
+                throw new Error('Không thể tải database');
+            }
+
+            const data = dbResult.data;
+            let hasChanges = false;
+
+            // Update products images URLs
+            if (data.products && Array.isArray(data.products)) {
+                data.products = data.products.map((product: any) => {
+                    let productUpdated = false;
+
+                    // Update legacy images array
+                    if (product.images && Array.isArray(product.images)) {
+                        product.images = product.images.map((url: string) => {
+                            if (url.includes(oldFilename)) {
+                                productUpdated = true;
+                                return url.replace(oldFilename, newFilename);
+                            }
+                            return url;
+                        });
+                    }
+
+                    // Update imagesWithMetadata array
+                    if (product.imagesWithMetadata && Array.isArray(product.imagesWithMetadata)) {
+                        product.imagesWithMetadata = product.imagesWithMetadata.map((img: any) => {
+                            if (img.url && img.url.includes(oldFilename)) {
+                                productUpdated = true;
+                                return {
+                                    ...img,
+                                    url: img.url.replace(oldFilename, newFilename),
+                                    filename: newFilename
+                                };
+                            }
+                            return img;
+                        });
+                    }
+
+                    if (productUpdated) {
+                        hasChanges = true;
+                        console.log(`  ✓ Cập nhật sản phẩm: ${product.title}`);
+                    }
+
+                    return product;
+                });
+            }
+
+            // Update media metadata keys
+            if (data.media && typeof data.media === 'object') {
+                if (data.media[oldFilename]) {
+                    data.media[newFilename] = data.media[oldFilename];
+                    delete data.media[oldFilename];
+                    hasChanges = true;
+                    console.log(`  ✓ Cập nhật media metadata key`);
+                }
+            }
+
+            // Save updated database
+            if (hasChanges) {
+                const saveResponse = await fetch(`${BACKEND_URL}/api/database`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (saveResponse.ok) {
+                    console.log('✅ Đã cập nhật database thành công!');
+                } else {
+                    throw new Error('Lỗi khi lưu database');
+                }
+            } else {
+                console.log('ℹ️ Không có thay đổi nào cần cập nhật');
+            }
+        } catch (error) {
+            console.error('❌ Lỗi khi cập nhật database references:', error);
+            throw error;
         }
     };
 
@@ -380,6 +531,37 @@ const MediaLibrary: React.FC<MediaLibraryProps> = ({ onMetadataChange, onImageDe
                                             <label className="text-[10px] font-bold text-neutral-500 uppercase">📅 Ngày tải lên</label>
                                             <p className="text-xs font-semibold mt-1">
                                                 {new Date(selectedImage.uploadedAt).toLocaleString('vi-VN')}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Rename File Section */}
+                                    <div className="pt-4 border-t border-neutral-100">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase mb-2 block">
+                                            ✏️ Đổi tên file (SEO)
+                                        </label>
+                                        <div className="space-y-2">
+                                            <input
+                                                type="text"
+                                                value={newFilenameInput}
+                                                onChange={(e) => setNewFilenameInput(e.target.value)}
+                                                placeholder="Vd: hoa-hong-do-ecuador"
+                                                className="w-full bg-white border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !isRenaming) {
+                                                        handleRename();
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={handleRename}
+                                                disabled={isRenaming || !newFilenameInput.trim()}
+                                                className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-neutral-300 text-white py-2 rounded-lg text-xs font-bold transition-all"
+                                            >
+                                                {isRenaming ? '⏳ Đang đổi tên...' : '✅ Đổi tên file'}
+                                            </button>
+                                            <p className="text-[10px] text-neutral-400 italic">
+                                                💡 Hệ thống sẽ tự động tạo slug SEO-friendly và cập nhật tất cả sản phẩm đang dùng ảnh này
                                             </p>
                                         </div>
                                     </div>

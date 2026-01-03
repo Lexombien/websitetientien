@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import cors from 'cors';
@@ -20,7 +21,7 @@ const USE_DYNAMIC_HOST = !process.env.HOST;
 // Cấu hình CORS chi tiết hơn
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type']
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -28,6 +29,28 @@ app.use(express.json({ limit: '50mb' }));
 // Endpoint kiểm tra kết nối
 app.get('/api/ping', (req, res) => {
     res.json({ success: true, message: 'Server is running' });
+});
+
+// ==================== AUTHENTICATION API ====================
+// Credentials được lưu trong biến môi trường (không lộ ở frontend)
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+// API: Login
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        res.json({
+            success: true,
+            message: 'Đăng nhập thành công!'
+        });
+    } else {
+        res.status(401).json({
+            success: false,
+            error: 'Sai tài khoản hoặc mật khẩu!'
+        });
+    }
 });
 
 // Tạo folder uploads nếu chưa có (giống WordPress /wp-content/uploads)
@@ -49,17 +72,15 @@ if (!fs.existsSync(dbFile)) {
     }, null, 2));
 }
 
-// Serve static files từ folder uploads với cache headers
+
+
+// Serve static files từ folder uploads
 app.use('/uploads', express.static(uploadsDir, {
-    maxAge: '1y', // Cache for 1 year
+    // Cache lâu dài (1 năm) để tối ưu tốc độ load ảnh
+    // Vì tên file đã có suffix random nên ít khi bị trùng, nếu trùng thì tên file khác -> URL khác -> không lo cache cũ
+    maxAge: '1y',
     etag: true,
-    lastModified: true,
-    setHeaders: (res, path) => {
-        // Cache images for 1 year
-        if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp') || path.endsWith('.gif')) {
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-    }
+    lastModified: true
 }));
 
 // ==================== DATABASE API ====================
@@ -94,8 +115,8 @@ const storage = multer.diskStorage({
         cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
-        // Tạo tên file unique: timestamp + original name
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // Tạo tên file unique ngắn gọn: 6 số ngẫu nhiên theo yêu cầu
+        const uniqueSuffix = Math.floor(100000 + Math.random() * 900000);
         const ext = path.extname(file.originalname);
         const nameWithoutExt = path.basename(file.originalname, ext);
         // Sanitize filename
@@ -148,7 +169,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 });
 
 // API: Upload multiple images (tối đa 5)
-app.post('/api/upload-multiple', upload.array('images', 5), (req, res) => {
+app.post('/api/upload-multiple', upload.array('images', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'Không có file nào được upload!' });
@@ -197,11 +218,9 @@ app.delete('/api/upload/:filename', (req, res) => {
             console.log('✅ Kết quả: Đã xóa file thành công!');
             res.json({ success: true, message: 'Đã xóa ảnh thành công!' });
         } else {
-            console.warn('❌ Kết quả: Không tìm thấy file tại vị trí này!');
-            // Log danh sách file hiện có để debug
-            const existingFiles = fs.readdirSync(uploadsDir);
-            console.log(`- Tổng số file hiện có trong folder: ${existingFiles.length}`);
-            res.status(404).json({ error: 'Không tìm thấy ảnh trên server!' });
+            console.warn('⚠️ File không tồn tại (coi như đã xóa)!');
+            // Trả về success để frontend không báo lỗi
+            res.json({ success: true, message: 'Ảnh đã được xóa (hoặc không tồn tại)!' });
         }
     } catch (error) {
         console.error('🔥 Lỗi server khi xóa:', error);
@@ -234,7 +253,79 @@ app.get('/api/uploads', (req, res) => {
     }
 });
 
-// Health check
+// API: Rename image file (for SEO optimization)
+app.put('/api/rename-upload/:oldFilename', (req, res) => {
+    try {
+        const oldFilename = decodeURIComponent(req.params.oldFilename);
+        const { newFilename } = req.body;
+
+        if (!newFilename) {
+            return res.status(400).json({ error: 'Tên file mới không được để trống!' });
+        }
+
+        console.log(`\n--- YÊU CẦU ĐỔI TÊN FILE ---`);
+        console.log(`- Tên cũ: ${oldFilename}`);
+        console.log(`- Tên mới được đề xuất: ${newFilename}`);
+
+        // Create SEO-friendly filename
+        const ext = path.extname(oldFilename);
+        const randomId = Math.floor(100000 + Math.random() * 900000); // 6 chữ số ngẫu nhiên
+
+        // Sanitize new filename: remove Vietnamese accents, special chars, convert to lowercase
+        const slug = newFilename
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D') // Handle đ separately
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+            .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+
+        const finalFilename = `${slug}-${randomId}${ext}`;
+        console.log(`- Tên file cuối cùng (SEO): ${finalFilename}`);
+
+        const oldPath = path.normalize(path.join(uploadsDir, oldFilename));
+        const newPath = path.normalize(path.join(uploadsDir, finalFilename));
+
+        // Security check
+        if (!oldPath.startsWith(uploadsDir) || !newPath.startsWith(uploadsDir)) {
+            console.error('🔥 Cảnh báo bảo mật: Cố gắng rename file ngoài phạm vi cho phép!');
+            return res.status(403).json({ error: 'Không có quyền truy cập file này!' });
+        }
+
+        // Check if old file exists
+        if (!fs.existsSync(oldPath)) {
+            console.warn('❌ File cũ không tồn tại!');
+            return res.status(404).json({ error: 'Không tìm thấy file cần đổi tên!' });
+        }
+
+        // Check if new filename already exists
+        if (fs.existsSync(newPath)) {
+            console.warn('❌ File mới đã tồn tại!');
+            return res.status(409).json({ error: 'Tên file này đã tồn tại!' });
+        }
+
+        // Rename the file
+        fs.renameSync(oldPath, newPath);
+        console.log('✅ Đã đổi tên file thành công!');
+
+        // Generate new URL
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
+        const newUrl = `${protocol}://${host}/uploads/${finalFilename}`;
+
+        res.json({
+            success: true,
+            message: 'Đã đổi tên file thành công!',
+            oldFilename: oldFilename,
+            newFilename: finalFilename,
+            newUrl: newUrl
+        });
+    } catch (error) {
+        console.error('🔥 Lỗi khi đổi tên file:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',

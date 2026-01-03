@@ -10,9 +10,14 @@ interface ImageUploadWithMetadataProps {
 
 // Thay localhost bằng IP LAN để truy cập từ máy khác
 // Auto-detect backend URL based on environment
-const BACKEND_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3001'  // Local development
-    : '';  // Production: use same origin (Nginx proxy)
+const isDevelopment = window.location.hostname === 'localhost' ||
+    window.location.hostname.match(/^192\.168\./) ||
+    window.location.hostname.match(/^10\./) ||
+    window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./);
+
+const BACKEND_URL = isDevelopment
+    ? `http://${window.location.hostname}:3001`
+    : '';
 
 const ImageUploadWithMetadata: React.FC<ImageUploadWithMetadataProps> = ({
     image,
@@ -78,20 +83,15 @@ const ImageUploadWithMetadata: React.FC<ImageUploadWithMetadataProps> = ({
     };
 
     const handleRemove = async () => {
-        if (!image) return;
-
-        // Delete from server if it's a server URL
-        if (image.url.startsWith(BACKEND_URL) && image.filename) {
-            try {
-                await fetch(`${BACKEND_URL}/api/upload/${image.filename}`, {
-                    method: 'DELETE'
-                });
-            } catch (error) {
-                console.error('Delete error:', error);
-            }
-        }
-
+        // Cập nhật UI ngay lập tức để người dùng thấy ảnh biến mất
         onUpdate(null);
+
+        // Xử lý xóa file ở background (không await để tránh đơ UI)
+        if (image && image.url.startsWith(BACKEND_URL) && image.filename) {
+            fetch(`${BACKEND_URL}/api/upload/${image.filename}`, {
+                method: 'DELETE'
+            }).catch(err => console.error('Background delete error:', err));
+        }
     };
 
     const handleMetadataUpdate = (updates: Partial<ImageWithMetadata>) => {
@@ -132,7 +132,9 @@ const ImageUploadWithMetadata: React.FC<ImageUploadWithMetadataProps> = ({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleRemove();
+                                            if (confirm('Bạn chắc chắn muốn xóa ảnh này?')) {
+                                                handleRemove();
+                                            }
                                         }}
                                         className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all"
                                     >

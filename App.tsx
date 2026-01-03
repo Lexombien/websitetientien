@@ -11,8 +11,15 @@ import MediaLibrary from './components/MediaLibrary';
 import ImageLightbox from './components/ImageLightbox';
 
 // Auto-detect backend URL based on environment
-const BACKEND_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:3001'  // Local development
+// Development: localhost or LAN IP (192.168.x.x, 10.x.x.x, etc.)
+// Production: deployed with Nginx proxy
+const isDevelopment = window.location.hostname === 'localhost' ||
+  window.location.hostname.match(/^192\.168\./) ||
+  window.location.hostname.match(/^10\./) ||
+  window.location.hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./); // Private IP ranges
+
+const BACKEND_URL = isDevelopment
+  ? `http://${window.location.hostname}:3001`  // Development: use same host with backend port
   : '';  // Production: use same origin (Nginx proxy)
 
 const App: React.FC = () => {
@@ -285,15 +292,31 @@ const App: React.FC = () => {
     loadDataFromServer();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TÀI KHOẢN MẶC ĐỊNH: admin / admin123
-    if (loginData.username === 'admin' && loginData.password === 'admin123') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('admin_auth', 'true');
-      setLoginError('');
-    } else {
-      setLoginError('Sai tài khoản hoặc mật khẩu! (Gợi ý: admin/admin123)');
+    setLoginError('');
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem('admin_auth', 'true');
+        setLoginError('');
+      } else {
+        setLoginError(data.error || 'Sai tài khoản hoặc mật khẩu!');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('Lỗi kết nối đến server!');
     }
   };
 
@@ -306,6 +329,30 @@ const App: React.FC = () => {
   const saveProducts = (newProducts: FlowerProduct[]) => {
     setProducts(newProducts);
     localStorage.setItem('flowers_data', JSON.stringify(newProducts));
+
+    // Tự động đồng bộ lên server (Auto-save)
+    fetch(`${BACKEND_URL}/api/database`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        products: newProducts,
+        categories,
+        settings: globalSettings,
+        categorySettings,
+        media: mediaMetadata,
+        zaloNumber: ZALO_NUMBER
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log('☁️ Đã tự động lưu lên server!');
+          setLastSyncTime(new Date().toLocaleString('vi-VN'));
+        }
+      })
+      .catch(err => console.error('❌ Lỗi auto-save:', err));
   };
 
   const saveCategories = (newCats: string[]) => {
@@ -1415,51 +1462,6 @@ const App: React.FC = () => {
                 )}
               </section>
 
-              {/* FORM SẢN PHẨM */}
-              <section className="glass-strong p-8 rounded-3xl border border-white/30 shadow-xl">
-                <div
-                  className="flex justify-between items-center mb-8 cursor-pointer group"
-                  onClick={() => toggleSection('productForm')}
-                >
-                  <h3 className="text-lg font-bold serif-display gradient-text flex items-center gap-2">
-                    <span className="w-1.5 h-6 bg-gradient-purple rounded-full inline-block"></span>
-                    Thêm sản phẩm mới
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <button className="pill-button glass px-4 py-2 hover:glass-strong transition-all">
-                      <svg
-                        className={`w-5 h-5 transition-transform duration-300 ${expandedSections.productForm ? 'rotate-180' : ''}`}
-                        style={{ color: 'var(--primary-pink)' }}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {expandedSections.productForm && (
-                  <div className="animate-in fade-in duration-300">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingProduct({ title: '', category: categories[0] || '', images: [], switchInterval: 3000, aspectRatio: '3/4', originalPrice: 0, salePrice: 0 });
-                        setShowEditModal(true);
-                      }}
-                      className="pill-button bg-gradient-pink text-white px-6 py-3 text-sm font-bold shadow-lg hover-glow-pink w-full mb-6"
-                    >
-                      + Tạo sản phẩm mới
-                    </button>
-
-                    <p className="text-sm text-center py-8 border-2 border-dashed border-white/30 rounded-2xl glass-pink" style={{ color: 'var(--text-secondary)' }}>
-                      Click nút <span className="font-bold" style={{ color: 'var(--primary-pink)' }}>"+  Tạo sản phẩm mới"</span> ở trên để thêm sản phẩm.<br />
-                      Hoặc click <span className="font-bold" style={{ color: 'var(--secondary-purple)' }}>icon bút chì</span> trên sản phẩm bên dưới để chỉnh sửa.
-                    </p>
-                  </div>
-                )}
-              </section>
 
               {/* QUẢN LÝ NHANH SẢN PHẨM */}
               <section>
@@ -1487,6 +1489,7 @@ const App: React.FC = () => {
                 {expandedSections.inventory && (
 
                   <div className="space-y-8">
+                    {/* Products with valid categories */}
                     {categories.map((category) => {
                       const categoryProducts = products
                         .filter(p => p.category === category)
@@ -1536,6 +1539,55 @@ const App: React.FC = () => {
                         </div>
                       );
                     })}
+
+                    {/* Products with deleted/invalid categories */}
+                    {(() => {
+                      const uncategorizedProducts = products.filter(p => !categories.includes(p.category));
+                      if (uncategorizedProducts.length === 0) return null;
+
+                      return (
+                        <div className="glass-strong p-6 rounded-2xl border-2 border-yellow-300/50 shadow-lg bg-yellow-50/20">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h4 className="font-bold flex items-center gap-2 text-yellow-700">
+                                <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                                ⚠️ Sản phẩm không có danh mục
+                              </h4>
+                              <p className="text-xs text-yellow-600 mt-1">
+                                Danh mục của các sản phẩm này đã bị xóa. Vui lòng chỉnh sửa để gán lại danh mục mới.
+                              </p>
+                            </div>
+                            <span className="badge-glass bg-yellow-500 text-white text-xs font-bold px-3 py-1">
+                              {uncategorizedProducts.length} sản phẩm
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {uncategorizedProducts.map(p => (
+                              <div key={p.id} className="relative group">
+                                <div className="absolute -top-2 -right-2 z-20 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg animate-pulse">
+                                  ⚠️
+                                </div>
+                                <div className="absolute bottom-2 left-2 right-2 z-20 bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded text-center">
+                                  Danh mục: "{p.category}" đã xóa
+                                </div>
+                                <FlowerCard
+                                  product={p}
+                                  isAdmin
+                                  onEdit={openEditModal}
+                                  globalAspectRatio={
+                                    globalSettings.aspectRatio === 'custom'
+                                      ? globalSettings.customValue.replace(/:/g, '/').replace(/x/gi, '/')
+                                      : globalSettings.aspectRatio
+                                  }
+                                  mediaMetadata={mediaMetadata}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {products.length === 0 && (
                       <div className="text-center py-16 text-neutral-400">
@@ -1623,6 +1675,26 @@ const App: React.FC = () => {
             </section>
           ) : null}
         </main>
+
+        {/* Floating Action Button - Add Product */}
+        {activeTab === 'products' && (
+          <button
+            onClick={() => {
+              setEditingProduct({ title: '', category: categories[0] || '', images: [], switchInterval: 3000, aspectRatio: '3/4', originalPrice: 0, salePrice: 0 });
+              setShowEditModal(true);
+            }}
+            className="fixed bottom-8 right-8 z-50 bg-gradient-pink text-white w-16 h-16 rounded-full shadow-2xl hover-glow-pink flex items-center justify-center group hover:scale-110 active:scale-95 transition-all"
+            title="Thêm sản phẩm mới"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" />
+            </svg>
+            {/* Tooltip */}
+            <span className="absolute -top-12 right-0 bg-neutral-900 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              ✨ Thêm sản phẩm mới
+            </span>
+          </button>
+        )}
 
         {/* MODAL SỬA TÊN DANH MỤC */}
         {showCategoryEditModal && editingCategory && (
@@ -1746,13 +1818,13 @@ const App: React.FC = () => {
 
                   <div className="space-y-3">
                     <label className="text-[10px] font-bold uppercase text-neutral-400 ml-1">
-                      📸 Hình ảnh sản phẩm (Tối đa 5 ảnh) + SEO
+                      📸 Hình ảnh sản phẩm (Tối đa 10 ảnh) + SEO
                     </label>
                     <p className="text-[9px] text-neutral-500 ml-1">
                       💡 Tải ảnh lên và điền thông tin SEO để tối ưu hóa tìm kiếm Google Images
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                      {[0, 1, 2, 3, 4].map(idx => {
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(idx => {
                         // Initialize imagesWithMetadata if not exists
                         if (!editingProduct.imagesWithMetadata) {
                           editingProduct.imagesWithMetadata = [];

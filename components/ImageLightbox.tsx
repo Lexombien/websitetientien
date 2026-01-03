@@ -85,13 +85,6 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({ images, initialIndex, isO
                         onLoad={() => setIsLoaded(true)}
                     />
 
-                    {/* Metadata Overlay */}
-                    {isLoaded && (currentImage.alt || currentImage.title) && (
-                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-white rounded-b-lg animate-in slide-in-from-bottom-4">
-                            {currentImage.title && <h4 className="text-xl font-bold serif-display mb-1">{currentImage.title}</h4>}
-                            {currentImage.alt && <p className="text-sm opacity-80">{currentImage.alt}</p>}
-                        </div>
-                    )}
                 </div>
 
                 {/* Navigation Buttons */}
