@@ -1,0 +1,245 @@
+import express from 'express';
+import multer from 'multer';
+import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Get __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = 3001; // Backend chạy ở port 3001
+const HOST = '192.168.1.10'; // IP LAN của máy server
+
+
+// Cấu hình CORS chi tiết hơn
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
+}));
+app.use(express.json({ limit: '50mb' }));
+
+// Endpoint kiểm tra kết nối
+app.get('/api/ping', (req, res) => {
+    res.json({ success: true, message: 'Server is running' });
+});
+
+// Tạo folder uploads nếu chưa có (giống WordPress /wp-content/uploads)
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Database file (lưu products, categories, settings giống WordPress database)
+const dbFile = path.join(__dirname, 'database.json');
+if (!fs.existsSync(dbFile)) {
+    fs.writeFileSync(dbFile, JSON.stringify({
+        products: [],
+        categories: [],
+        settings: {},
+        categorySettings: {},
+        media: {}, // Storage for image SEO metadata: { filename: { alt, title, description } }
+        zaloNumber: ''
+    }, null, 2));
+}
+
+// Serve static files từ folder uploads với cache headers
+app.use('/uploads', express.static(uploadsDir, {
+    maxAge: '1y', // Cache for 1 year
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, path) => {
+        // Cache images for 1 year
+        if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png') || path.endsWith('.webp') || path.endsWith('.gif')) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
+
+// ==================== DATABASE API ====================
+
+// GET: Lấy toàn bộ database
+app.get('/api/database', (req, res) => {
+    try {
+        const data = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+        res.json({ success: true, data });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST: Lưu toàn bộ database
+app.post('/api/database', (req, res) => {
+    try {
+        const data = req.body;
+        fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
+        res.json({ success: true, message: 'Đã lưu database thành công!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== IMAGE UPLOAD API ====================
+
+
+// Cấu hình Multer để lưu file
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        // Tạo tên file unique: timestamp + original name
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        const nameWithoutExt = path.basename(file.originalname, ext);
+        // Sanitize filename
+        const safeName = nameWithoutExt.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        cb(null, safeName + '-' + uniqueSuffix + ext);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Max 5MB
+    },
+    fileFilter: (req, file, cb) => {
+        // Chỉ cho phép upload ảnh
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Chỉ cho phép upload file ảnh (JPEG, PNG, GIF, WebP)!'));
+        }
+    }
+});
+
+// API: Upload single image
+app.post('/api/upload', upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Không có file nào được upload!' });
+        }
+
+        // Trả về URL của ảnh
+        const imageUrl = `http://${HOST}:${PORT}/uploads/${req.file.filename}`;
+
+        res.json({
+            success: true,
+            url: imageUrl,
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: Upload multiple images (tối đa 5)
+app.post('/api/upload-multiple', upload.array('images', 5), (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'Không có file nào được upload!' });
+        }
+
+        // Trả về array URLs
+        const images = req.files.map(file => ({
+            url: `http://${HOST}:${PORT}/uploads/${file.filename}`,
+            filename: file.filename,
+            originalName: file.originalname,
+            size: file.size
+        }));
+
+        res.json({
+            success: true,
+            images: images,
+            count: images.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: Delete image - Sử dụng cú pháp chuẩn để tránh lỗi server
+app.delete('/api/upload/:filename', (req, res) => {
+    try {
+        const filename = decodeURIComponent(req.params.filename);
+        const filePath = path.normalize(path.join(uploadsDir, filename));
+
+        console.log(`\n--- YÊU CẦU XÓA FILE ---`);
+        console.log(`- Filename nhận được: ${req.params.filename}`);
+        console.log(`- Filename sau decode: ${filename}`);
+        console.log(`- Folder uploads: ${uploadsDir}`);
+        console.log(`- Đường dẫn file: ${filePath}`);
+
+        // Bảo mật: Không cho phép xóa file ngoài folder uploads
+        if (!filePath.startsWith(uploadsDir)) {
+            console.error('🔥 Cảnh báo bảo mật: Cố gắng xóa file ngoài phạm vi cho phép!');
+            return res.status(403).json({ error: 'Không có quyền truy cập file này!' });
+        }
+
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            console.log('✅ Kết quả: Đã xóa file thành công!');
+            res.json({ success: true, message: 'Đã xóa ảnh thành công!' });
+        } else {
+            console.warn('❌ Kết quả: Không tìm thấy file tại vị trí này!');
+            // Log danh sách file hiện có để debug
+            const existingFiles = fs.readdirSync(uploadsDir);
+            console.log(`- Tổng số file hiện có trong folder: ${existingFiles.length}`);
+            res.status(404).json({ error: 'Không tìm thấy ảnh trên server!' });
+        }
+    } catch (error) {
+        console.error('🔥 Lỗi server khi xóa:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// API: List all uploaded images
+app.get('/api/uploads', (req, res) => {
+    try {
+        const files = fs.readdirSync(uploadsDir);
+        const images = files
+            .filter(file => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
+            .map(file => ({
+                filename: file,
+                url: `http://${HOST}:${PORT}/uploads/${file}`,
+                size: fs.statSync(path.join(uploadsDir, file)).size,
+                uploadedAt: fs.statSync(path.join(uploadsDir, file)).mtime
+            }));
+
+        res.json({
+            success: true,
+            images: images,
+            count: images.length
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        message: 'Server đang chạy!',
+        uploadsFolder: uploadsDir
+    });
+});
+
+// Start server
+// Listen trên 0.0.0.0 để cho phép truy cập từ tất cả IPs trong mạng
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Backend server đang chạy tại:`);
+    console.log(`   - Local: http://localhost:${PORT}`);
+    console.log(`   - LAN:   http://${HOST}:${PORT}`);
+    console.log(`📁 Ảnh được lưu trong: ${uploadsDir}`);
+    console.log(`🌐 Upload API: http://${HOST}:${PORT}/api/upload`);
+});

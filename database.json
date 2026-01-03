@@ -1,0 +1,97 @@
+{
+  "products": [
+    {
+      "title": "ấdsadsadsa",
+      "category": "MỤC 1",
+      "images": [
+        "http://192.168.1.10:3001/uploads/lmw-3-1767404544549-416600306.webp",
+        "http://192.168.1.10:3001/uploads/pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
+        "http://192.168.1.10:3001/uploads/---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
+        "http://192.168.1.10:3001/uploads/---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 500000,
+      "salePrice": 300000,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/lmw-3-1767404544549-416600306.webp",
+          "filename": "lmw-3-1767404544549-416600306.webp",
+          "alt": "lmw_3",
+          "title": "lmw_3",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
+          "filename": "pink-beauty-floral-elegant-nail-art-logo-1767406312165-956572591.png",
+          "alt": "Pink Beauty Floral Elegant Nail Art Logo",
+          "title": "Pink Beauty Floral Elegant Nail Art Logo",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
+          "filename": "---pngtree---crown-logo-vip-member-medal-8923135-1767406313859-302476147.png",
+          "alt": "—Pngtree—crown logo vip member medal_8923135",
+          "title": "—Pngtree—crown logo vip member medal_8923135",
+          "description": ""
+        },
+        {
+          "url": "http://192.168.1.10:3001/uploads/---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png",
+          "filename": "---pngtree---gold-flower-with-leaves-7674003-1767406315612-894022031.png",
+          "alt": "—Pngtree—gold flower with leaves_7674003",
+          "title": "—Pngtree—gold flower with leaves_7674003",
+          "description": ""
+        }
+      ],
+      "id": "1767356658073",
+      "categories": [
+        "MỤC 1"
+      ],
+      "sku": "HOA-001"
+    },
+    {
+      "title": "ABC",
+      "category": "",
+      "images": [
+        "http://192.168.1.10:3001/uploads/lmw-3-1767351162832-845368624.webp"
+      ],
+      "switchInterval": 3000,
+      "aspectRatio": "3/4",
+      "originalPrice": 0,
+      "salePrice": 0,
+      "imagesWithMetadata": [
+        {
+          "url": "http://192.168.1.10:3001/uploads/lmw-3-1767351162832-845368624.webp",
+          "filename": "lmw-3-1767351162832-845368624.webp",
+          "alt": "lmw_3",
+          "title": "lmw_3",
+          "description": ""
+        }
+      ],
+      "id": "1767351164034"
+    }
+  ],
+  "categories": [
+    "MỤC 1"
+  ],
+  "settings": {
+    "aspectRatio": "3/4",
+    "redirectZaloOnImageClick": true,
+    "showSKU": true,
+    "zaloLink": "https://zalo.me/0567899996",
+    "themeColor": "pink",
+    "websiteName": "Tiên Tiên Florits",
+    "logoUrl": "http://192.168.1.10:3001/uploads/tamidu-1767409721921-897795594.png",
+    "enablePriceDisplay": true,
+    "enableLightbox": true,
+    "phoneNumber": "0335127075",
+    "seoTitle": "Hoa tươi tiên tiên",
+    "seoKeywords": "Hoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiên",
+    "seoDescription": "111111111111111Hoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiênHoa tươi tiên tiên",
+    "logoSizeDesktop": "h-20",
+    "logoSizeMobile": "h-8",
+    "customCSS": ""
+  },
+  "categorySettings": {},
+  "zaloNumber": "0900000000"
+}
