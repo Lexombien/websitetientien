@@ -1,4 +1,4 @@
-# 🚀 Hướng Dẫn Deploy Lên Vultr VPS
+# 🚀 Hướng Dẫn Deploy Lên VPS (Node.js 22 LTS)
 
 ## 📋 Chuẩn Bị
 
@@ -33,13 +33,29 @@ ssh root@YOUR_VPS_IP
 apt update && apt upgrade -y
 ```
 
-### 2.2. Cài Node.js (v18 LTS)
+### 2.2. Cài Node.js 22 LTS (Mới nhất - Khuyên dùng)
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+# Node.js 22 LTS (Long Term Support - Stable)
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
-node -v  # Kiểm tra version
-npm -v
+
+# Kiểm tra version
+node -v  # Phải >= v22.0.0
+npm -v   # Phải >= 10.0.0
 ```
+
+**Tại sao dùng Node.js 22?**
+- ✅ Performance tốt hơn 20-30% so với v18
+- ✅ Hỗ trợ ES modules native tốt hơn
+- ✅ Bảo mật được cập nhật liên tục
+- ✅ LTS = Long Term Support đến 2027
+
+**Nếu muốn dùng Node.js Current (v23 - Bleeding edge):**
+```bash
+curl -fsSL https://deb.nodesource.com/setup_23.x | bash -
+apt install -y nodejs
+```
+⚠️ Chỉ dùng v23 nếu bạn cần features mới nhất và chấp nhận rủi ro.
 
 ### 2.3. Cài PM2 (Process Manager)
 ```bash
