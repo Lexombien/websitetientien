@@ -9,7 +9,10 @@ interface ImageUploadWithMetadataProps {
 }
 
 // Thay localhost bằng IP LAN để truy cập từ máy khác
-const BACKEND_URL = 'http://192.168.1.10:3001';
+// Auto-detect backend URL based on environment
+const BACKEND_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3001'  // Local development
+    : '';  // Production: use same origin (Nginx proxy)
 
 const ImageUploadWithMetadata: React.FC<ImageUploadWithMetadataProps> = ({
     image,

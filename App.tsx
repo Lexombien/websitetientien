@@ -10,7 +10,10 @@ import ImageUploadWithMetadata from './components/ImageUploadWithMetadata';
 import MediaLibrary from './components/MediaLibrary';
 import ImageLightbox from './components/ImageLightbox';
 
-const BACKEND_URL = 'http://192.168.1.10:3001';
+// Auto-detect backend URL based on environment
+const BACKEND_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3001'  // Local development
+  : '';  // Production: use same origin (Nginx proxy)
 
 const App: React.FC = () => {
   const [currentPath, setCurrentPath] = useState(window.location.hash);

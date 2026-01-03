@@ -14,7 +14,10 @@ interface ImageMetadata {
     description?: string;
 }
 
-const BACKEND_URL = 'http://192.168.1.10:3001';
+// Auto-detect backend URL based on environment
+const BACKEND_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3001'  // Local development
+    : '';  // Production: use same origin (Nginx proxy)
 
 interface MediaLibraryProps {
     onMetadataChange?: (data: Record<string, ImageMetadata>) => void;
