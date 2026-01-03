@@ -20,5 +20,15 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# Backend data (không commit lên Git)
+uploads/
+backups/
+database.json
+ecosystem.config.js
+
+# Environment
+.env
+.env.local
+.env.production

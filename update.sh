@@ -1,27 +1,65 @@
 #!/bin/bash
 
-# 🔄 Quick Update Script
-# Run this after making code changes
+# ===================================
+# 🔄 UPDATE SCRIPT - Floral Shop
+# ===================================
 
-echo "🔄 Updating Floral Shop..."
+set -e  # Exit on error
 
-cd /var/www/floral-shop || exit
+echo "🔄 Bắt đầu update..."
 
-echo "📥 Pulling latest code..."
-git pull
+# 1. Backup database
+echo "💾 Backup database..."
+BACKUP_DIR="./backups"
+mkdir -p $BACKUP_DIR
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
-echo "📦 Installing dependencies..."
+if [ -f "database.json" ]; then
+    cp database.json "$BACKUP_DIR/database_$TIMESTAMP.json"
+    echo "✅ Đã backup database.json"
+fi
+
+if [ -d "uploads" ]; then
+    tar -czf "$BACKUP_DIR/uploads_$TIMESTAMP.tar.gz" uploads/
+    echo "✅ Đã backup uploads/"
+fi
+
+# Giữ lại 5 bản backup gần nhất
+ls -t $BACKUP_DIR/database_*.json 2>/dev/null | tail -n +6 | xargs -r rm
+ls -t $BACKUP_DIR/uploads_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm
+
+# 2. Pull code mới (nếu dùng Git)
+if [ -d ".git" ]; then
+    echo "📥 Pull code mới từ Git..."
+    git pull
+else
+    echo "⚠️  Không phải Git repo, bỏ qua pull"
+fi
+
+# 3. Cài dependencies mới
+echo "📦 Cài đặt dependencies..."
 npm install
 
-echo "🏗️  Building..."
+# 4. Build lại frontend
+echo "🔨 Build frontend..."
 npm run build
 
-echo "♻️  Restarting backend..."
+# 5. Restart backend
+echo "🔄 Restart backend..."
 pm2 restart floral-backend
 
-echo "🌐 Reloading Nginx..."
-nginx -t && systemctl reload nginx
+# 6. Reload Nginx
+echo "🌐 Reload Nginx..."
+sudo systemctl reload nginx
 
 echo ""
-echo "✅ Update complete!"
+echo "✅ ================================"
+echo "✅ UPDATE THÀNH CÔNG!"
+echo "✅ ================================"
+echo ""
+echo "💾 Backup được lưu tại: $BACKUP_DIR/"
+echo "📊 Backend status:"
 pm2 status
+echo ""
+echo "🌐 Website đã được cập nhật!"
+echo ""

@@ -10,8 +10,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001; // Backend chạy ở port 3001
-const HOST = '192.168.1.10'; // IP LAN của máy server
+const PORT = process.env.PORT || 3001; // Ưu tiên PORT từ env
+const HOST = process.env.HOST || 'localhost'; // Ưu tiên HOST từ env, fallback localhost
+
+// Nếu không có HOST trong env, ta sẽ cố gắng sử dụng request header để xác định host động trong các API upload
+const USE_DYNAMIC_HOST = !process.env.HOST;
 
 
 // Cấu hình CORS chi tiết hơn
@@ -128,7 +131,9 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
         }
 
         // Trả về URL của ảnh
-        const imageUrl = `http://${HOST}:${PORT}/uploads/${req.file.filename}`;
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
+        const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
         res.json({
             success: true,
@@ -150,8 +155,10 @@ app.post('/api/upload-multiple', upload.array('images', 5), (req, res) => {
         }
 
         // Trả về array URLs
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
         const images = req.files.map(file => ({
-            url: `http://${HOST}:${PORT}/uploads/${file.filename}`,
+            url: `${protocol}://${host}/uploads/${file.filename}`,
             filename: file.filename,
             originalName: file.originalname,
             size: file.size
@@ -206,11 +213,13 @@ app.delete('/api/upload/:filename', (req, res) => {
 app.get('/api/uploads', (req, res) => {
     try {
         const files = fs.readdirSync(uploadsDir);
+        const protocol = req.get('x-forwarded-proto') || req.protocol;
+        const host = req.get('host');
         const images = files
             .filter(file => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
             .map(file => ({
                 filename: file,
-                url: `http://${HOST}:${PORT}/uploads/${file}`,
+                url: `${protocol}://${host}/uploads/${file}`,
                 size: fs.statSync(path.join(uploadsDir, file)).size,
                 uploadedAt: fs.statSync(path.join(uploadsDir, file)).mtime
             }));

@@ -1,436 +1,381 @@
-# 🚀 Hướng Dẫn Deploy Lên VPS (Node.js 22 LTS)
+# 🚀 Hướng Dẫn Deploy Lên VPS (Chưa Có Domain)
 
-## 📋 Chuẩn Bị
-
-### Yêu cầu:
-- ✅ Vultr VPS (Ubuntu 22.04 LTS khuyên dùng)
-- ✅ Domain name (tùy chọn, nhưng khuyên dùng)
-- ✅ SSH access vào VPS
-
-### Thông tin VPS cần có:
-- IP address của VPS
-- SSH username (thường là `root`)
-- SSH password hoặc private key
+Hướng dẫn này sẽ giúp bạn deploy ứng dụng Floral Shop (React + Express) lên VPS và truy cập qua **IP address**.
 
 ---
 
-## 🔧 BƯỚC 1: Kết nối SSH vào VPS
+## 📋 Yêu Cầu
 
-### Từ Windows PowerShell:
+- VPS Ubuntu 20.04/22.04 (hoặc Debian)
+- RAM: Tối thiểu 1GB
+- SSH access với quyền root
+- IP address của VPS
+
+---
+
+## 🎯 Các Bước Deploy
+
+### **Bước 1: Chuẩn Bị VPS** (Chỉ làm 1 lần)
+
+SSH vào VPS của bạn:
+
 ```bash
 ssh root@YOUR_VPS_IP
-# Nhập password khi được hỏi
 ```
 
-### Hoặc dùng PuTTY nếu thích giao diện
+Thay `YOUR_VPS_IP` bằng IP thực của VPS (ví dụ: `123.45.67.89`)
 
 ---
 
-## 📦 BƯỚC 2: Cài Đặt Môi Trường Trên VPS
+### **Bước 2: Setup Môi Trường** (Chỉ làm 1 lần)
 
-### 2.1. Update hệ thống
-```bash
-apt update && apt upgrade -y
-```
+Chạy lệnh sau để cài **Node.js 22 LTS**, **Nginx**, **PM2**:
 
-### 2.2. Cài Node.js 22 LTS (Mới nhất - Khuyên dùng)
 ```bash
-# Node.js 22 LTS (Long Term Support - Stable)
+# Cài Node.js 22 LTS
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-apt install -y nodejs
+apt update && apt install -y nodejs nginx git ufw
+
+# Cài PM2 (Process Manager)
+npm install -g pm2@latest
 
 # Kiểm tra version
-node -v  # Phải >= v22.0.0
-npm -v   # Phải >= 10.0.0
+node -v    # Phải là v22.x.x
+npm -v     # Phải là 10.x.x
 ```
 
-**Tại sao dùng Node.js 22?**
-- ✅ Performance tốt hơn 20-30% so với v18
-- ✅ Hỗ trợ ES modules native tốt hơn
-- ✅ Bảo mật được cập nhật liên tục
-- ✅ LTS = Long Term Support đến 2027
+**Hoặc dùng script tự động:**
 
-**Nếu muốn dùng Node.js Current (v23 - Bleeding edge):**
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_23.x | bash -
-apt install -y nodejs
-```
-⚠️ Chỉ dùng v23 nếu bạn cần features mới nhất và chấp nhận rủi ro.
-
-### 2.3. Cài PM2 (Process Manager)
-```bash
-npm install -g pm2
-```
-
-### 2.4. Cài Nginx (Web Server)
-```bash
-apt install -y nginx
-systemctl start nginx
-systemctl enable nginx
-```
-
-### 2.5. Cài Git
-```bash
-apt install -y git
+# Upload file setup-vps.sh lên VPS, sau đó:
+chmod +x setup-vps.sh
+bash setup-vps.sh
 ```
 
 ---
 
-## 📤 BƯỚC 3: Upload Code Lên VPS
+### **Bước 3: Upload Code Lên VPS**
 
-### Phương án 1: Dùng Git (Khuyên dùng)
+Có 3 cách, chọn 1 cách bạn thích:
+
+#### **Cách 1: Dùng Git** (Khuyên dùng)
+
 ```bash
-# Trên VPS
 cd /var/www
-git clone YOUR_GITHUB_REPO_URL floral-shop
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git floral-shop
 cd floral-shop
-npm install
 ```
 
-### Phương án 2: Upload thủ công bằng FileZilla/WinSCP
-- Host: YOUR_VPS_IP
-- Port: 22
-- Username: root
-- Password: YOUR_PASSWORD
-- Upload toàn bộ folder vào `/var/www/floral-shop`
+#### **Cách 2: Dùng SCP từ Windows**
 
-### Phương án 3: Dùng SCP từ máy local
+Trên máy Windows, mở **PowerShell** và chạy:
+
+```powershell
+scp -r e:\TIENTIÈNOLORITS\* root@YOUR_VPS_IP:/var/www/floral-shop/
+```
+
+Sau đó SSH vào VPS:
+
 ```bash
-# Từ máy Windows (PowerShell)
-scp -r e:\TIENTIÈNOLORITS root@YOUR_VPS_IP:/var/www/floral-shop
+ssh root@YOUR_VPS_IP
+cd /var/www/floral-shop
 ```
+
+#### **Cách 3: Dùng FileZilla/WinSCP**
+
+- **Host:** `YOUR_VPS_IP`
+- **Port:** `22`
+- **Username:** `root`
+- **Password:** Mật khẩu VPS của bạn
+- Upload toàn bộ folder vào: `/var/www/floral-shop`
 
 ---
 
-## 🏗️ BƯỚC 4: Build Production Trên VPS
+### **Bước 4: Deploy Tự Động** 🚀
+
+Sau khi code đã có trên VPS, chạy script deploy:
 
 ```bash
 cd /var/www/floral-shop
 
-# Cài dependencies
-npm install
+# Cho phép chạy script
+chmod +x deploy.sh
 
-# Build frontend
-npm run build
-
-# Kiểm tra folder dist đã tạo chưa
-ls -la dist/
+# Chạy deploy
+bash deploy.sh
 ```
+
+Script sẽ tự động:
+- ✅ Cài dependencies (`npm install`)
+- ✅ Build frontend (`npm run build`)
+- ✅ Cấu hình PM2 để chạy backend
+- ✅ Cấu hình Nginx để serve frontend + proxy API
+- ✅ Mở firewall cho port 80
+
+**Quá trình này mất khoảng 2-5 phút.**
 
 ---
 
-## ⚙️ BƯỚC 5: Cấu Hình Backend
+### **Bước 5: Kiểm Tra**
 
-### 5.1. Tạo file .env (nếu cần)
+Sau khi deploy xong, kiểm tra:
+
 ```bash
-nano .env
-```
-
-Nội dung:
-```env
-PORT=3001
-HOST=0.0.0.0
-NODE_ENV=production
-```
-
-### 5.2. Tạo folder uploads và database
-```bash
-mkdir -p uploads
-touch database.json
-```
-
-### 5.3. Chạy backend với PM2
-```bash
-pm2 start server.js --name floral-backend
-pm2 save
-pm2 startup
-```
-
-Kiểm tra:
-```bash
+# Kiểm tra PM2 (backend)
 pm2 status
-pm2 logs floral-backend
-```
 
----
-
-## 🌐 BƯỚC 6: Cấu Hình Nginx
-
-### 6.1. Tạo config file
-```bash
-nano /etc/nginx/sites-available/floral-shop
-```
-
-### 6.2. Nội dung config (KHÔNG có domain):
-```nginx
-server {
-    listen 80;
-    server_name YOUR_VPS_IP;
-
-    # Frontend (Static files từ dist)
-    location / {
-        root /var/www/floral-shop/dist;
-        try_files $uri $uri/ /index.html;
-        
-        # Cache static files
-        location ~* \.(jpg|jpeg|png|gif|ico|css|js|webp)$ {
-            expires 1y;
-            add_header Cache-Control "public, immutable";
-        }
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
-    # Uploads folder
-    location /uploads {
-        alias /var/www/floral-shop/uploads;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
-```
-
-### 6.3. Nội dung config (CÓ domain):
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-
-    # Giống như trên
-    location / {
-        root /var/www/floral-shop/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /uploads {
-        alias /var/www/floral-shop/uploads;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
-```
-
-### 6.4. Enable site và restart Nginx
-```bash
-# Enable site
-ln -s /etc/nginx/sites-available/floral-shop /etc/nginx/sites-enabled/
-
-# Remove default site
-rm /etc/nginx/sites-enabled/default
-
-# Test config
-nginx -t
-
-# Restart Nginx
-systemctl restart nginx
-```
-
----
-
-## 🔒 BƯỚC 7: Cài SSL (HTTPS) - Chỉ khi có Domain
-
-### 7.1. Cài Certbot
-```bash
-apt install -y certbot python3-certbot-nginx
-```
-
-### 7.2. Lấy SSL certificate
-```bash
-certbot --nginx -d yourdomain.com -d www.yourdomain.com
-```
-
-Nhập email và đồng ý terms.
-
-### 7.3. Auto-renew
-```bash
-certbot renew --dry-run
-```
-
----
-
-## 🔥 BƯỚC 8: Cấu Hình Tường Lửa
-
-```bash
-# Allow HTTP
-ufw allow 80/tcp
-
-# Allow HTTPS
-ufw allow 443/tcp
-
-# Allow SSH
-ufw allow 22/tcp
-
-# Enable firewall
-ufw enable
-ufw status
-```
-
----
-
-## ✅ BƯỚC 9: Kiểm Tra & Test
-
-### 9.1. Kiểm tra backend
-```bash
-curl http://localhost:3001/api/database
-```
-
-### 9.2. Kiểm tra từ browser
-Truy cập:
-- `http://YOUR_VPS_IP` (hoặc domain)
-- Kiểm tra admin panel
-- Upload ảnh test
-- Tạo sản phẩm test
-
-### 9.3. Kiểm tra PM2
-```bash
-pm2 status
-pm2 logs floral-backend --lines 50
-```
-
-### 9.4. Kiểm tra Nginx
-```bash
+# Kiểm tra Nginx
 systemctl status nginx
-tail -f /var/log/nginx/error.log
+
+# Test website
+curl http://localhost
+```
+
+Nếu tất cả đều OK, bạn sẽ thấy:
+- PM2 hiển thị `floral-backend` đang chạy
+- Nginx status: `active (running)`
+
+---
+
+### **Bước 6: Truy Cập Website** 🌐
+
+Mở trình duyệt và truy cập:
+
+- **Frontend:** `http://YOUR_VPS_IP`
+- **Admin Panel:** `http://YOUR_VPS_IP/#admin`
+
+Thay `YOUR_VPS_IP` bằng IP thực của VPS (ví dụ: `http://123.45.67.89`)
+
+---
+
+## 🔧 Các Lệnh Hữu Ích
+
+### Xem Logs Backend
+
+```bash
+pm2 logs floral-backend
+pm2 logs floral-backend --lines 100  # Xem 100 dòng gần nhất
+```
+
+### Restart Backend
+
+```bash
+pm2 restart floral-backend
+```
+
+### Xem Status
+
+```bash
+pm2 status
+```
+
+### Reload Nginx
+
+```bash
+sudo systemctl reload nginx
+```
+
+### Xem Logs Nginx
+
+```bash
+sudo tail -f /var/log/nginx/error.log
+sudo tail -f /var/log/nginx/access.log
 ```
 
 ---
 
 ## 🔄 Update Code Sau Này
 
-### Cách 1: Git Pull
+Khi bạn có code mới, chỉ cần:
+
 ```bash
 cd /var/www/floral-shop
-git pull
-npm install
-npm run build
-pm2 restart floral-backend
+bash update.sh
 ```
 
-### Cách 2: Upload lại file
-- Upload file mới
-- Chạy `npm run build`
-- Restart PM2: `pm2 restart floral-backend`
+Script sẽ tự động:
+- 💾 Backup database và uploads
+- 📥 Pull code mới (nếu dùng Git)
+- 📦 Cài dependencies mới
+- 🔨 Build lại frontend
+- 🔄 Restart backend
+
+**Hoặc làm thủ công:**
+
+```bash
+cd /var/www/floral-shop
+git pull                          # Pull code mới
+npm install                       # Cài dependencies
+npm run build                     # Build frontend
+pm2 restart floral-backend        # Restart backend
+```
 
 ---
 
-## 🆘 Troubleshooting
+## 🐛 Troubleshooting
 
-### Lỗi: Port 3001 đã được dùng
+### 1. Website không truy cập được
+
 ```bash
-lsof -i :3001
-kill -9 PID_NUMBER
-pm2 restart floral-backend
+# Kiểm tra PM2
+pm2 status
+pm2 logs floral-backend --lines 50
+
+# Kiểm tra Nginx
+sudo systemctl status nginx
+sudo nginx -t  # Test config
+
+# Kiểm tra firewall
+sudo ufw status
 ```
 
-### Lỗi: Nginx 502 Bad Gateway
+### 2. Port 3001 bị chiếm
+
 ```bash
-# Kiểm tra backend có chạy không
-pm2 status
-pm2 logs floral-backend
+# Tìm process đang dùng port 3001
+lsof -i :3001
+
+# Kill process
+kill -9 PID
 
 # Restart backend
 pm2 restart floral-backend
 ```
 
-### Lỗi: Permission denied khi upload ảnh
+### 3. Build Failed
+
 ```bash
-chmod -R 755 /var/www/floral-shop/uploads
-chown -R www-data:www-data /var/www/floral-shop/uploads
+# Xóa node_modules và cài lại
+rm -rf node_modules package-lock.json
+npm install
+npm run build
 ```
 
-### Lỗi: Database bị lỗi
+### 4. Nginx 502 Bad Gateway
+
 ```bash
-# Backup database
-cp database.json database.backup.json
+# Kiểm tra backend có chạy không
+pm2 status
 
-# Reset database
-echo '{"products":[],"categories":[],"settings":{},"categorySettings":{},"media":{}}' > database.json
-```
+# Nếu không chạy, start lại
+pm2 start ecosystem.config.js
 
----
-
-## 📊 Monitoring
-
-### Xem logs
-```bash
-# PM2 logs
+# Kiểm tra logs
 pm2 logs floral-backend
-
-# Nginx access logs
-tail -f /var/log/nginx/access.log
-
-# Nginx error logs
-tail -f /var/log/nginx/error.log
 ```
 
-### Performance
+### 5. Database bị mất
+
 ```bash
-# CPU & RAM usage
-htop
+# Restore từ backup
+cd /var/www/floral-shop/backups
+ls -lh  # Xem các file backup
 
-# PM2 monitoring
-pm2 monit
+# Copy backup mới nhất
+cp database_YYYYMMDD_HHMMSS.json ../database.json
+
+# Restart backend
+pm2 restart floral-backend
 ```
 
 ---
 
-## 🎯 Checklist Deploy Thành Công
+## 🔒 Bảo Mật (Tùy Chọn)
 
-- [ ] VPS đã cài đủ môi trường (Node.js, Nginx, PM2)
+### Tạo User Mới (Không Dùng Root)
+
+```bash
+# Tạo user mới
+adduser deploy
+usermod -aG sudo deploy
+
+# Chuyển quyền sở hữu folder
+chown -R deploy:deploy /var/www/floral-shop
+
+# Đăng nhập bằng user mới
+su - deploy
+```
+
+### Cấu Hình SSH Key
+
+```bash
+# Trên máy Windows, tạo SSH key
+ssh-keygen -t ed25519
+
+# Copy public key lên VPS
+ssh-copy-id root@YOUR_VPS_IP
+```
+
+### Tắt Password Login (Chỉ dùng SSH Key)
+
+```bash
+sudo nano /etc/ssh/sshd_config
+
+# Sửa dòng sau:
+PasswordAuthentication no
+
+# Restart SSH
+sudo systemctl restart sshd
+```
+
+---
+
+## 🌐 Thêm Domain Sau Này
+
+Khi bạn có domain, chỉ cần:
+
+1. **Point A Record** của domain về IP VPS
+2. **Sửa Nginx config:**
+
+```bash
+sudo nano /etc/nginx/sites-available/floral-shop
+```
+
+Thay dòng:
+```nginx
+server_name _;
+```
+
+Thành:
+```nginx
+server_name yourdomain.com www.yourdomain.com;
+```
+
+3. **Reload Nginx:**
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+4. **Cài SSL (Let's Encrypt):**
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+```
+
+---
+
+## 📞 Hỗ Trợ
+
+Nếu gặp vấn đề, kiểm tra:
+- Logs backend: `pm2 logs floral-backend`
+- Logs Nginx: `sudo tail -f /var/log/nginx/error.log`
+- Status: `pm2 status` và `sudo systemctl status nginx`
+
+---
+
+## ✅ Checklist Deploy
+
+- [ ] VPS đã cài Node.js 22, Nginx, PM2
 - [ ] Code đã upload lên `/var/www/floral-shop`
-- [ ] `npm install` và `npm run build` thành công
-- [ ] Backend chạy với PM2 (`pm2 status` show online)
-- [ ] Nginx config đúng và restart thành công
-- [ ] Truy cập `http://YOUR_IP` thấy website
-- [ ] Admin panel hoạt động (`http://YOUR_IP/#admin`)
-- [ ] Upload ảnh thành công
-- [ ] Tạo sản phẩm hiển thị đúng
-- [ ] (Nếu có domain) SSL đã cài và HTTPS hoạt động
+- [ ] Đã chạy `bash deploy.sh`
+- [ ] PM2 hiển thị backend đang chạy
+- [ ] Nginx status: active
+- [ ] Firewall đã mở port 80
+- [ ] Truy cập `http://YOUR_VPS_IP` thành công
 
 ---
 
-## 💡 Tips
-
-1. **Backup thường xuyên**:
-   ```bash
-   tar -czf backup-$(date +%Y%m%d).tar.gz /var/www/floral-shop
-   ```
-
-2. **Tự động backup database**:
-   ```bash
-   crontab -e
-   # Thêm dòng: 0 2 * * * cp /var/www/floral-shop/database.json /var/www/floral-shop/backup-$(date +\%Y\%m\%d).json
-   ```
-
-3. **Monitor disk space**:
-   ```bash
-   df -h
-   ```
-
-4. **Clean old uploads nếu cần**:
-   ```bash
-   find /var/www/floral-shop/uploads -mtime +90 -delete
-   ```
-
----
-
-🎉 **Chúc mừng! Website đã live trên VPS!**
+🎉 **Chúc mừng! Website của bạn đã live!**
