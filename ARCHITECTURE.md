@@ -227,7 +227,7 @@ server {
 ### PM2 Configuration
 
 ```javascript
-// ecosystem.config.js
+// ecosystem.config.cjs (CommonJS vì package.json dùng "type": "module")
 module.exports = {
   apps: [{
     name: 'floral-backend',
@@ -240,6 +240,8 @@ module.exports = {
   }]
 }
 ```
+
+**Note:** File phải là `.cjs` (CommonJS) vì `package.json` có `"type": "module"`.
 
 ---
 
@@ -257,7 +259,7 @@ floral-shop/
 │
 ├── ⚙️ Backend Files
 │   ├── server.js
-│   └── ecosystem.config.js (generated)
+│   └── ecosystem.config.cjs (generated)
 │
 ├── 💾 Data & Storage
 │   ├── database.json

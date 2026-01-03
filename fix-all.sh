@@ -1,26 +1,53 @@
 #!/bin/bash
 
 # ===================================
-# 🚀 DEPLOY SCRIPT - Floral Shop
+# 🔧 FIX ALL SCRIPT - Floral Shop
 # ===================================
+# Script tự động fix các lỗi thường gặp
 
 set -e  # Exit on error
 
-echo "🚀 Bắt đầu deploy..."
+echo "🔧 BẮT ĐẦU FIX TẤT CẢ CÁC VẤN ĐỀ..."
+echo "================================"
+echo ""
 
-# 1. Cài dependencies
-echo "📦 Cài đặt dependencies..."
-npm install
+# Lấy đường dẫn hiện tại
+CURRENT_DIR=$(pwd)
 
-# 2. Build frontend
-echo "🔨 Build frontend..."
-npm run build
+# 1. Build frontend
+echo "📦 1. BUILD FRONTEND..."
+echo "----------------------------"
+if [ -f "package.json" ]; then
+    npm run build
+    echo "✅ Đã build frontend"
+else
+    echo "❌ Không tìm thấy package.json!"
+    exit 1
+fi
+echo ""
 
-# 3. Setup PM2 cho backend
-echo "⚙️  Cấu hình PM2..."
+# 2. Kiểm tra dist folder
+echo "📁 2. KIỂM TRA DIST FOLDER..."
+echo "----------------------------"
+if [ -f "dist/index.html" ]; then
+    echo "✅ File dist/index.html tồn tại"
+    ls -lh dist/index.html
+else
+    echo "❌ Build failed! Không tìm thấy dist/index.html"
+    exit 1
+fi
+echo ""
 
-# Tạo file ecosystem.config.cjs cho PM2 (CommonJS format)
-cat > ecosystem.config.cjs << 'EOF'
+# 3. Setup PM2
+echo "⚙️  3. SETUP PM2..."
+echo "----------------------------"
+
+# Tạo logs folder
+mkdir -p logs
+
+# Tạo ecosystem.config.cjs nếu chưa có
+if [ ! -f "ecosystem.config.cjs" ]; then
+    cat > ecosystem.config.cjs << 'EOF'
 module.exports = {
   apps: [{
     name: 'floral-backend',
@@ -39,29 +66,24 @@ module.exports = {
   }]
 }
 EOF
+    echo "✅ Đã tạo ecosystem.config.cjs"
+fi
 
-# Tạo folder logs
-mkdir -p logs
-
-# Stop PM2 nếu đang chạy
+# Restart PM2
 pm2 delete floral-backend 2>/dev/null || true
-
-# Start PM2 với file .cjs
 pm2 start ecosystem.config.cjs
 pm2 save
-pm2 startup
+echo "✅ PM2 đã khởi động"
+echo ""
 
 # 4. Cấu hình Nginx
-echo "🌐 Cấu hình Nginx..."
+echo "🌐 4. CẤU HÌNH NGINX..."
+echo "----------------------------"
 
-# Lấy đường dẫn hiện tại
-CURRENT_DIR=$(pwd)
-
-# Tạo Nginx config
 sudo tee /etc/nginx/sites-available/floral-shop > /dev/null << EOF
 server {
     listen 80;
-    server_name _;  # Chấp nhận tất cả domain/IP
+    server_name _;
 
     # Frontend (static files)
     location / {
@@ -108,31 +130,63 @@ server {
 }
 EOF
 
+echo "✅ Đã tạo Nginx config"
+
 # Enable site
 sudo ln -sf /etc/nginx/sites-available/floral-shop /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
+echo "✅ Đã enable site"
 
-# Test và reload Nginx
+# Test Nginx config
+echo ""
+echo "Testing Nginx config..."
 sudo nginx -t
+
+# Reload Nginx
 sudo systemctl reload nginx
-sudo systemctl enable nginx
+echo "✅ Đã reload Nginx"
+echo ""
 
 # 5. Cấu hình Firewall
-echo "🔥 Cấu hình firewall..."
-sudo ufw allow 22/tcp    # SSH
-sudo ufw allow 80/tcp    # HTTP
-sudo ufw allow 443/tcp   # HTTPS (cho sau này)
+echo "🔥 5. CẤU HÌNH FIREWALL..."
+echo "----------------------------"
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw --force enable
+echo "✅ Đã mở firewall"
+echo ""
+
+# 6. Kiểm tra
+echo "🧪 6. KIỂM TRA HỆ THỐNG..."
+echo "----------------------------"
+
+echo "PM2 Status:"
+pm2 status
 
 echo ""
-echo "✅ ================================"
-echo "✅ DEPLOY THÀNH CÔNG!"
-echo "✅ ================================"
+echo "Nginx Status:"
+sudo systemctl status nginx --no-pager | head -10
+
+echo ""
+echo "Test localhost:"
+curl -I http://localhost 2>&1 | head -5
+
+echo ""
+echo "Test backend:"
+curl -s http://localhost:3001/api/ping
+
+echo ""
+
+# 7. Tóm tắt
+echo "================================"
+echo "✅ FIX HOÀN TẤT!"
+echo "================================"
 echo ""
 echo "📊 Thông tin:"
+echo "   - Frontend: $CURRENT_DIR/dist"
 echo "   - Backend: PM2 running on port 3001"
-echo "   - Frontend: Nginx serving from /dist"
-echo "   - Uploads: $CURRENT_DIR/uploads"
+echo "   - Nginx: Serving on port 80"
 echo ""
 echo "🌐 Truy cập website:"
 echo "   - Frontend: http://YOUR_VPS_IP"
@@ -140,7 +194,10 @@ echo "   - Admin: http://YOUR_VPS_IP/#admin"
 echo ""
 echo "📝 Các lệnh hữu ích:"
 echo "   - Xem logs backend: pm2 logs floral-backend"
+echo "   - Xem logs Nginx: sudo tail -f /var/log/nginx/error.log"
 echo "   - Restart backend: pm2 restart floral-backend"
-echo "   - Xem status: pm2 status"
 echo "   - Reload Nginx: sudo systemctl reload nginx"
+echo ""
+echo "🔍 Nếu vẫn không hoạt động, chạy:"
+echo "   bash debug.sh"
 echo ""
